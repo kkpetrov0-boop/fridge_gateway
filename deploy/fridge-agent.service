@@ -1,0 +1,17 @@
+[Unit]
+Description=Fridge gateway agent (serial to MQTT)
+After=network-online.target mosquitoo.service
+Wants=networl-online.target
+
+[Service]
+Type=simple
+User=kirill
+Group=dialout
+WorkingDirectory=/home/kirill/fridge-gateway
+ExecStart=/home/kirill/fridge-gateway/venv/bin/python /home/kirill/fridge-gateway/bridge.py
+Restart=always
+RestartSec=5
+EnvironmentFile=-/etc/fridge-agent.env
+
+[Install]
+WantedBy=multi-user.target
