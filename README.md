@@ -1,6 +1,6 @@
 ## Fridge gateway
 
-I built an end-to-end gateway system that controls a compressor at a customer site. An ESP32 with a DHT11 collects temperature data every two seconds, runs a two-state machine with a fixed hysteresis band (0.5 °C) and sends it to a Raspberry Pi through a USB-to-UART bridge (115200 baud on UART1l the ESP_IDF log stays on UART0). Each line has a start marker, a sequence number and an XOR checksum. A Python agent parses the data, converts it to JSON and publishes it to an MQTT broker. The system also receives commands from the broker to change the setpoint — the target temperature.
+I built an end-to-end gateway system that controls a compressor at a customer site. An ESP32 with a DHT11 collects temperature data every two seconds, runs a two-state machine with a fixed hysteresis band (0.5 °C) and sends it to a Raspberry Pi through a USB-to-UART bridge (115200 baud on UART1; the ESP-IDF log stays on UART0). Each line has a start marker, a sequence number and an XOR checksum. A Python agent parses the data, converts it to JSON and publishes it to an MQTT broker. The system also receives commands from the broker to change the setpoint — the target temperature.
 
 The goal of the project is to manage the electricity demand from HVAC systems. To achieve this, the cloud can change the setpoint remotely and control power consumption with it. When I raise the setpoint, the compressor runs less and the site sheds load. The device confirms the change on its own path: the telemetry payload carries the setpoint and comp fields, so the cloud sees the reported state of the equipment, not just an acknowledgement that the command was delivered.
 
@@ -36,7 +36,7 @@ flowchart LR
 2. I don't use authentication so anyone can subscribe or publish to any topic.
 3. I use checksum to verify data, but I don't use it to verify the command.
 4. My sensor uses its own protocol, while in real equipment I would use Modbus RTU over RS-485.
-5. I implemented only MQTT, not REST API. I would use it to configuration and provisioning at startup.
+5. I implemented only MQTT, not REST API. I would use it for configuration and provisioning at startup.
 
 ## Installation
 
@@ -62,7 +62,7 @@ cd gateway
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
-journalctl -u fridge-agent -n 20
+
 ```
 
 4. Install the udev rule so the bridge always appears as `/dev/fridge`:
@@ -94,5 +94,6 @@ sudo chmod 600 /etc/fridge-agent.env
 ```
 systemctl status fridge-agent
 mosquitto_sub -h localhost -t 'fridge/+/#' -v
+journalctl -u fridge-agent -n 20
 ```
 Telemetry should appear every two seconds, with a retained `online` status.
