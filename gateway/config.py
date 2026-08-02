@@ -25,3 +25,7 @@ BUFFER_KEEP_LINES = int(os.environ.get("FRIDGE_BUFFER_KEEP", "500"))
 # RECONNECT
 RECONNECT_MIN = float(os.environ.get("FRIDGE_RECONNECT_MIN", "1"))
 RECONNECT_MAX = float(os.environ.get("FRIDGE_RECONNECT_MAX", "60"))
+
+# Authentication
+MQTT_USER = os.environ.get("FRIDGE_MQTT_USER", "")
+MQTT_PASSWORD = os.environ.get("FRIDGE_MQTT_PASSWORD", "")

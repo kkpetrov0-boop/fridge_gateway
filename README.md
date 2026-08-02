@@ -30,13 +30,14 @@ flowchart LR
 
 6. I add a buffer to save the data when the broker is offline. The buffer is written to the SD-card, so it won't disappear on reboot or power loss. I flush + fsync on each frame to achieve that. When the buffer exceeds the limit (200 KB), I save the last 500 lines and delete all other lines. I do this using a tmp file and os.replace, to avoid corruption while overwriting a file using open(file, "w"). What is more, if the power is lost between sending the buffer and deleting it, the data will be sent again on restart. The consumer must deduplicate by client_id and sequence number. 
 
+7. I add authentication and an ACL with two users: one writes telemetry and status and reads commands, the other does the opposite. A device cannot publish commands at all, so a compromised gateway cannot control other devices on the fleet.
+
 ## Limitations
 
-1. I don't use TLS, my traffic is in plaintext and could be caught by anyone.
-2. I don't use authentication so anyone can subscribe or publish to any topic.
-3. I use checksum to verify data, but I don't use it to verify the command.
-4. My sensor uses its own protocol, while in real equipment I would use Modbus RTU over RS-485.
-5. I implemented only MQTT, not REST API. I would use it for configuration and provisioning at startup.
+1. I don't use TLS, my traffic is in plaintext and could be caught by anyone (even the password in CONNECT).
+2. I use checksum to verify data, but I don't use it to verify the command.
+3. The ESP32 is a simulator with a protocol I designed myself, while in real equipment I would use Modbus RTU over RS-485.
+4. I implemented only MQTT, not REST API. I would use it for configuration and provisioning at startup.
 
 ## Installation
 
@@ -62,7 +63,6 @@ cd gateway
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
-
 ```
 
 4. Install the udev rule so the bridge always appears as `/dev/fridge`:
@@ -73,20 +73,33 @@ sudo udevadm trigger
 ls -l /dev/fridge
 ```
 
-5. Install the systemd unit. Adjust `WorkingDirectory` and `ExecStart` to your path first:
+5. Create broker users and install the ACL
+```
+sudo mosquitto_passwd -c /etc/mosquitto/passwd gw-01
+sudo mosquitto_passwd -b /etc/mosquitto/passwd cloud <password>
+sudo chown mosquitto:mosquitto /etc/mosquitto/passwd
+sudo chmod 600 /etc/mosquitto/passwd
+sudo cp deploy/mosquitto-acl.example /etc/mosquitto/acl
+sudo chown mosquitto:mosquitto /etc/mosquitto/acl
+sudo cp deploy/mosquitto-auth.conf /etc/mosquitto/conf.d/
+sudo systemctl restart mosquitto
+```
+
+6. Install the systemd unit. Adjust `WorkingDirectory` and `ExecStart` to your path first:
 ```
 sudo cp deploy/fridge-agent.service /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable --now fridge-agent
 ```
 
-6. Optional — journal size limit and secrets file:
+7. Optional — journal size limit and secrets file:
 ```
 sudo mkdir -p /etc/systemd/journald.conf.d
 sudo cp deploy/journald-size.conf /etc/systemd/journald.conf.d/
 sudo systemctl restart systemd-journald
 
 sudo cp deploy/fridge-agent.env.example /etc/fridge-agent.env
+Write password to /etc/fridge-agent.env
 sudo chmod 600 /etc/fridge-agent.env
 ```
 

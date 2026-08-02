@@ -1,0 +1,8 @@
+user gw-01
+topic write fridge/gw-01/telemetry
+topic write fridge/gw-01/status
+topic read fridge/gw-01/cmd/#
+user cloud
+topic write fridge/+/cmd/#
+topic read fridge/+/telemetry
+topic read fridge/+/status

@@ -142,6 +142,9 @@ def make_mqtt_client() -> mqtt.Client:
     client.on_connect = on_connect
     client.on_message = on_message
 
+    if config.MQTT_USER:
+        client.username_pw_set(config.MQTT_USER, config.MQTT_PASSWORD)
+
     delay = config.RECONNECT_MIN
     while running:
         try:
